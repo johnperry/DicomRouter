@@ -1,0 +1,61 @@
+<html>
+	<head>
+		<title>DicomRouter Help</title>
+	</head>
+	<body>
+		<center><h1>DicomRouter Help</h1></center>
+		These instructions are for the administrator configuring the program.
+
+		<p>DicomRouter receives DICOM objects and forwards them to one or more destinations depending on their contents. Each destination is assigned a name, a URL, a priority and a script that selects whether the object is to be queued for transmission to the destination. The program requires that an XML configuration file called "config.xml" be located in its root directory.
+
+		<h3>The Configuration File</h3>
+<pre>
+&lt;router logDepth="100"&gt;
+    &lt;scp
+        aetitle="AE title"
+        ipaddress="IP address or 'autodetect'"
+        port="port number" /&gt;
+    &lt;queue
+        name="queue name"
+        destination="dicom://destinationAET:routerAET@destinationIP:destinationPort"
+        priority="priorityNumber"&gt;
+        &lt;script&gt;
+            the script
+        &lt;/script&gt;
+    &lt;/queue&gt;
+    ...more queues as required
+&lt;/router&gt;
+</pre>
+		<h3>Queue Priorities</h3>
+		The priority attribute of a queue determines its priority relationship to other queues. Lower integer values indicate higher priority (e.g., priority 1 comes before priority 2, etc.). If two non-empty queues have different priorities, the higher priority queue is served first. Queues with the same priority value may be served in either order.
+		<h3>The Script Language</h3>
+		The script language interrogates a received DICOM object and computes a boolean result that, if <b>true</b>, results in the object being entered into the queue. An expression in the language consists of terms separated by operators and/or parentheses. There are three operators, listed in order of increasing precedence:
+		<ul>
+		<li><b>+</b> is logical <b>or</b></li>
+		<li><b>*</b> is logical <b>and</b></li>
+		<li><b>!</b> is unary logical <b>negation</b></li>
+		</ul>
+		<p>Examples:
+		<ul>
+		<li>term</li>
+		<li>term + term * term</li>
+		<li>term * (term + term) + term * !term</li>
+		</ul>
+		<p>Terms in the language are either reserved words (<b>true.</b> or <b>false.</b>) (note the periods after the words) or expressions in the form:&nbsp;
+		<b><font color=red>identifier</font>.method("</font><font color=blue>string</font>")</b> .
+		<p>An identifier is either a DCM4CHE element name (e.g. SOPInstanceUID) or a DICOM tag, specified in square brackets (e.g. [0008,0018]). No spaces are permitted in identifiers, and tags are required to contain all eight hexadecimal digits identifying the group and element.
+		<p>The language supports these methods:
+		<ul>
+		<li><b>equals</b> returns <b>true</b> if the value of the identifier exactly equals the string argument; otherwise, it returns false.
+		<li><b>equalsIgnoreCase</b> is the case-insensitive version of equals.
+		<li><b>matches</b> returns <b>true</b> if the value of the identifier matches the regular expression specified in the string argument; otherwise, it returns false.
+		<li><b>contains</b> returns <b>true</b> if the value of the identifier contains the the string argument anywhere within it; otherwise, it returns false.
+		<li><b>containsIgnoreCase</b> is the case-insensitive version of contains.
+		<li><b>startsWith</b> returns <b>true</b> if the value of the identifier starts with the string argument; otherwise, it returns false.
+		<li><b>startsWithIgnoreCase</b> is the case-insensitive version of startsWith.
+		<li><b>endsWith</b> returns <b>true</b> if the value of the identifier ends with the string argument; otherwise, it returns false.
+		<li><b>endsWithIgnoreCase</b> is the case-insensitive version of endsWith.
+		</ul>
+		<p>The value of an identifier is the string value stored in the received DICOM object in the element associated with the identifier. If an identifier is missing from the received DICOM object, an empty string is provided.
+	</body>
+</html>

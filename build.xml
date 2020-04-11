@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+
+<project name="DicomRouter" basedir="." default="all">
+
+	<property name="build" value="${basedir}/build"/>
+	<property name="products" value="${basedir}/products"/>
+	<property name="libraries" value="${basedir}/libraries"/>
+	<property name="documentation" value="${basedir}/documentation"/>
+
+	<property name="name" value="DicomRouter"/>
+	<property name="package" value="org.rsna.router"/>
+	<property name="desc" value="DICOM Router"/>
+	<property name="title" value="${name}"/>
+	<property name="copyright" value="Copyright 2020 RSNA"/>
+	
+	<property name="source" value="${basedir}/source"/>
+	<property name="java" value="${source}/java"/>
+	<property name="files" value="${source}/files"/>
+	<property name="resources" value="${source}/resources"/>
+	<property name="router" value="org/rsna/router"/>
+	<property name="installer" value="org/rsna/installer"/>
+	<property name="ctp" value="/Development/CTP"/>
+
+	<path id="classpath">
+		<pathelement location="${libraries}/libraries/dcm4che.jar"/>
+		<pathelement location="${libraries}/libraries/log4j.jar"/>
+		<pathelement location="${libraries}/libraries/CTP.jar"/>
+		<pathelement location="${libraries}/libraries/util.jar"/>
+	</path>
+
+	<target name="init">
+		<tstamp>
+			<format property="today" pattern="yyyy.MM.dd"/>
+			<format property="now" pattern="HH:mm:ss z"/>
+		</tstamp>
+		<echo message="Time now ${now}"/>
+		<echo message="ant.java.version = ${ant.java.version}" />
+		<mkdir dir="${build}"/>
+		<mkdir dir="${products}"/>
+	</target>
+
+	<target name="clean">
+		<delete dir="${build}" failonerror="false"/>
+		<delete dir="${documentation}" failonerror="false"/>
+	</target>
+
+	<target name="getLibraryJars">
+		<copy overwrite="true" todir="${libraries}/libraries">
+			<fileset dir="${ctp}/libraries">
+				<include name="CTP.jar"/>
+				<include name="dcm4che.jar"/>
+				<include name="log4j.jar"/>
+				<include name="util.jar"/>
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="build" depends="init, getLibraryJars">
+
+		<javac srcdir="${java}" destdir="${build}" optimize="on"
+			classpathref="classpath"
+			includeantruntime="false"
+			debug="true" debuglevel="lines,vars,source">
+			<!--
+				<compilerarg value="-Xlint:unchecked"/>
+				<compilerarg value="-Xlint:deprecation"/>
+			-->
+		</javac>
+			
+		<copy overwrite="true" todir="${build}">
+			<fileset dir="${resources}"/>
+		</copy>
+
+		<jar destfile="${products}/${name}.jar">
+			<manifest>
+				<attribute name="Main-Class" value="${package}.${name}"/>
+				<attribute name="Class-Path" 
+					value="
+libraries/dcm4che.jar 
+libraries/log4j.jar 
+libraries/CTP.jar 
+libraries/util.jar 
+"/>
+			</manifest>
+			<fileset dir="${build}"
+				includes="${router}/**"
+				excludes="${installer}/Installer**"/>
+		</jar>
+
+		<mkdir dir="${build}/DicomRouter"/>
+
+		<copy overwrite="true" todir="${build}/${name}">
+			<fileset dir="${products}" includes="${name}.jar"/>
+			<fileset dir="${libraries}" includes="libraries/**"/>
+			<fileset dir="${files}" includes="*.*"/>
+		</copy>
+
+		<jar destfile="${products}/${name}-installer.jar">
+			<manifest>
+				<attribute name="Main-Class" value="org.rsna.installer.Installer"/>
+				<attribute name="Implementation-Version" value="${today} @ ${now}"/>
+				<attribute name="Date" value="${today} at ${now}"/>
+				<attribute name="Description" value="${desc}"/>
+			</manifest>
+			<fileset dir="${build}"
+				includes="${installer}/Installer** org/rsna/** ${name}/**"/>
+		</jar>
+
+	</target>
+
+	<target name="javadocs">
+		<mkdir dir="${documentation}"/>
+		<javadoc destdir="${documentation}" sourcepath="${java}" classpathref="classpath"
+			doctitle="${title}" windowtitle="${title}" bottom="${copyright}">
+			<package name="*"/>
+		</javadoc>
+	</target>
+
+	<target name="all" depends="clean, build"/>
+
+</project>
