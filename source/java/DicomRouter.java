@@ -8,7 +8,10 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.event.*;
 import org.apache.log4j.*;
+import org.rsna.server.*;
+import org.rsna.servlets.*;
 import org.rsna.ui.ApplicationProperties;
+import org.rsna.util.Cache;
 import org.rsna.util.FileUtil;
 import org.rsna.util.StringUtil;
 
@@ -28,25 +31,45 @@ public class DicomRouter extends JFrame implements TransferListener, ChangeListe
 	HtmlJPanel helpPanel;
 	StorageSCP storageSCP;
 	ExportService exportService = null;
-
-	Configuration config;
 	
+	static Configuration config;
+	static boolean runningAsService = false;
+	
+	/**
+	 * The startup method of the DicomRouter program.
+	 * This method is used when running the program as a Windows service.
+	 * It does not return until the stopService method is called
+	 * independently by the service manager.
+	 * @param args the command line arguments
+	 */
+	public static void startService(String[] args) {
+		System.out.println("Start [ServiceManager]");
+		if (Configuration.getInstance().canRunAsService()) {
+			runningAsService = true;
+			main(args);
+			while (runningAsService) {
+				try { Thread.sleep(2000); }
+				catch (Exception ignore) { }
+			}
+		}
+		else System.out.println("Unable to start as a service (port==0)");
+		System.out.println("Stop [ServiceManager]");
+	}
+
+	/**
+	 * The shutdown method of the DicomRouter program.
+	 * This method is used when running the program as a Windows service.
+	 * @param args the command line arguments
+	 */
+	public static void stopService(String[] args) {
+		runningAsService = false;
+	}
+
 	/**
 	 * The main method to start the program.
 	 * @param args the list of arguments from the command line.
 	 */
     public static void main(String args[]) {
-		new DicomRouter();
-    }
-
-	/**
-	 * Class constructor; creates the program main class.
-	 */
-    public DicomRouter() {
-		super();
-		setLayout(new BorderLayout());
-		setTitle(windowTitle);
-		
 		//Initialize Log4J
 		File logs = new File("logs");
 		logs.mkdirs();
@@ -59,7 +82,74 @@ public class DicomRouter extends JFrame implements TransferListener, ChangeListe
 		}
 		PropertyConfigurator.configure(propsPath);
 		logger = Logger.getLogger(DicomRouter.class);
+		
+		//Figure out how to start
+		config = Configuration.getInstance();
+		if (config.canRunAsService() && runningAsService) {
+			//Start the threads
+			StorageSCP.getInstance().startSCP();
+			ExportService.getInstance().start();
+			if (!startHttpServer()) runningAsService = false;
+		}
+		else {
+			//Run with a UI
+			new DicomRouter();
+		}
+    }
+    
+    static boolean startHttpServer() {
+		//Create the ServletSelector for the HttpServer
+		boolean requireAuthentication = false;
+		File root = new File("ROOT");
+		root.mkdirs();
+		ServletSelector selector = 
+				new ServletSelector(root , requireAuthentication);
 
+		//Add in the servlets
+		selector.addServlet("login",		LoginServlet.class);
+		selector.addServlet("users",		UserManagerServlet.class);
+		selector.addServlet("router",		RouterServlet.class);
+		selector.addServlet("logs",			LogServlet.class);
+		selector.addServlet("ping",			PingServlet.class);
+		selector.addServlet("svrsts",		ServerStatusServlet.class);
+		selector.addServlet("attacklog",	AttackLogServlet.class);
+
+		//Instantiate the singleton Users class
+		Users users = Users.getInstance("org.rsna.server.UsersXmlFileImpl", null);
+		
+		//Set the session timeout
+		Authenticator authenticator = Authenticator.getInstance();
+		authenticator.setSessionTimeout( 12 * 60 * 60 * 1000 ); //12 hrs
+		authenticator.setSessionCookieName("DICOMROUTERSESSION");
+
+		//Instantiate the server.
+		int port = config.getHttpPort();
+		boolean ssl = false;
+		int maxThreads = 4;
+		HttpServer httpServer = null;
+		try { 
+			httpServer = new HttpServer(ssl, port, maxThreads, selector);
+			httpServer.start();
+			return true;
+		}
+		catch (Exception ex) {
+			System.out.println("Unable to instantiate the HTTP Server on port "+port);
+			logger.error("Unable to instantiate the HTTP Server on port "+port, ex);
+			return false;
+		}
+	}
+
+	/**
+	 * Class constructor; creates the program main class.
+	 */
+    public DicomRouter() {
+		super();
+		Cache cache = Cache.getInstance(new File("CACHE"));
+		cache.clear();
+
+		setLayout(new BorderLayout());
+		setTitle(windowTitle);
+		
 		config = Configuration.getInstance();
 		addWindowListener(new WindowCloser(this));
 		
@@ -92,6 +182,7 @@ public class DicomRouter extends JFrame implements TransferListener, ChangeListe
 		//Start the subordinate threads.
 		storageSCP.startSCP();
 		exportService.start();
+		startHttpServer();
     }
     
 	class FooterPanel extends JPanel {

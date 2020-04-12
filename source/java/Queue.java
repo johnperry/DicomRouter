@@ -28,6 +28,7 @@ public class Queue implements Comparator<Queue>, Comparable {
 	String script;
 	LinkedList<File> queue;
 	long timeout = 0;
+	int filesTransmitted = 0;
 
 	/**
 	 * Class constructor.
@@ -48,6 +49,7 @@ public class Queue implements Comparator<Queue>, Comparable {
 		this.script = script;
 		this.queue = new LinkedList<File>();
 		timeout = 0L;
+		filesTransmitted = 0;
 		clear();
 	}
 
@@ -225,5 +227,19 @@ public class Queue implements Comparator<Queue>, Comparable {
 			return true;
 		}
 		return false;
+	}
+	
+	/**
+	 * Increment the count of files transmitted
+	 */
+	public synchronized void countTransmittedFile() {
+		filesTransmitted++;
+	}
+	
+	/**
+	 * Get the count of files transmitted
+	 */
+	public synchronized int getTransmittedFileCount() {
+		return filesTransmitted;
 	}
 }

@@ -17,7 +17,6 @@ public class LogPanel extends BasePanel {
 	JButton delete;
 	JButton refresh;
 	ColorPane cp;
-	String margin = "          ";
 	LinkedList<LogEntry> entries;
 	int logDepth = 100;
 
@@ -29,7 +28,8 @@ public class LogPanel extends BasePanel {
 	protected LogPanel() {
 		super();
 		entries = new LinkedList<LogEntry>();
-		Configuration.getInstance().getLogDepth();
+		Configuration config = Configuration.getInstance();
+		logDepth = config.getLogDepth();
 		cp = new ColorPane();
 		cp.setScrollableTracksViewportWidth(false);
 		BasePanel bp = new BasePanel();
@@ -39,6 +39,10 @@ public class LogPanel extends BasePanel {
 		jsp.setViewportView(bp);
 		jsp.getViewport().setBackground(Color.white);
 		add(jsp, BorderLayout.CENTER);
+	}
+	
+	public synchronized LogEntry[] getLogEntries() {
+		return entries.toArray(new LogEntry[entries.size()]);
 	}
 	
 	public synchronized void log(Color color, String text) {
@@ -67,19 +71,7 @@ public class LogPanel extends BasePanel {
 		String[] lines = e.text.split("\n");
 		cp.println(e.color, e.time + "  " + lines[0]);
 		for (int i=1; i<lines.length; i++) {
-			cp.println(e.color, margin + lines[i]);
+			cp.println(e.color, LogEntry.margin + lines[i]);
 		}
 	}
-	
-	class LogEntry {
-		Color color;
-		String time;
-		String text;
-		public LogEntry(Color color, String time, String text) {
-			this.color = color;
-			this.time = time;
-			this.text = text;
-		}
-	}
-	
 }

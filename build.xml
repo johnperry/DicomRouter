@@ -75,15 +75,14 @@
 			<manifest>
 				<attribute name="Main-Class" value="${package}.${name}"/>
 				<attribute name="Class-Path" 
-					value="
-libraries/dcm4che.jar 
+					value=
+"libraries/dcm4che.jar 
 libraries/log4j.jar 
 libraries/CTP.jar 
-libraries/util.jar 
-"/>
+libraries/util.jar"/>
 			</manifest>
 			<fileset dir="${build}"
-				includes="${router}/**"
+				includes="**"
 				excludes="${installer}/Installer**"/>
 		</jar>
 
@@ -92,7 +91,7 @@ libraries/util.jar
 		<copy overwrite="true" todir="${build}/${name}">
 			<fileset dir="${products}" includes="${name}.jar"/>
 			<fileset dir="${libraries}" includes="libraries/**"/>
-			<fileset dir="${files}" includes="*.*"/>
+			<fileset dir="${files}" includes="**"/>
 		</copy>
 
 		<jar destfile="${products}/${name}-installer.jar">

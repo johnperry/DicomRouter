@@ -67,8 +67,9 @@ public class ExportService extends Thread {
 				if (status.equals(Status.OK)) {
 					logPanel.log(Color.BLACK, queue.getName()+": export successful:\n"+file.getName());
 					logger.info(queue.getName()+": export successful: "+file.getName());
-					sendTransferEvent(queue.getName()+": export successful");
 					queue.removeFirstElement();
+					queue.countTransmittedFile();
+					sendTransferEvent(queue.getName()+": export successful");
 				}
 				else {
 					//If we get here, the transmission failed.

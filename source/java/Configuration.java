@@ -36,6 +36,7 @@ public class Configuration {
 	String storeAETitle;
 	Queue[] queues;
 	int logDepth = 100;
+	int httpPort = 0;
 
 	/**
 	 * Get the singleton instance of the Configuration, instantiating it if necessary.
@@ -60,8 +61,9 @@ public class Configuration {
 		
 		Element root = doc.getDocumentElement();
 
-		//Set the log depth
+		//Set the log depth and HTTP server port
 		logDepth = StringUtil.getInt(root.getAttribute("logDepth"), 100);
+		httpPort = StringUtil.getInt(root.getAttribute("httpPort"), 0);
 
 		//Set the SCP parameters
 		NodeList nl = root.getElementsByTagName("scp");
@@ -96,6 +98,23 @@ public class Configuration {
 	 */
 	public int getLogDepth() {
 		return logDepth;
+	}
+
+	/**
+	 * Determine whether theprogram can run as a service.
+	 * @return true if the program can as a service (requires a servicePort);
+	 * false otherwise.
+	 */
+	public boolean canRunAsService() {
+		return (httpPort != 0);
+	}
+
+	/**
+	 * Get the port of the server if running as a service.
+	 * @return the server port.
+	 */
+	public int getHttpPort() {
+		return httpPort;
 	}
 
 	/**

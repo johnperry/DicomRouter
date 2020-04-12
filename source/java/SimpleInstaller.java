@@ -6,6 +6,7 @@ import java.awt.event.*;
 import java.io.*;
 import java.util.*;
 import java.util.zip.*;
+import java.util.regex.*;
 
 /**
  * A simple self-extracting installer. This class unpacks files from its own
@@ -116,6 +117,8 @@ public class SimpleInstaller extends JFrame {
 					programName+" could not be fully installed.",
 					"Installation Failed",
 					JOptionPane.INFORMATION_MESSAGE);
+		
+		updateWindowsServiceInstaller();
 		exit();
 	}
 
@@ -289,6 +292,77 @@ public class SimpleInstaller extends JFrame {
 		int x = (scr.width-getSize().width)/2;
 		int y = (scr.height-getSize().height)/2;
 		setLocation(new Point(x,y));
+	}
+
+	private void updateWindowsServiceInstaller() {
+		try {
+			File dir = new File(directory, programName);
+			File windows = new File(dir, "windows");
+			File install = new File(windows, "install.bat");
+			System.out.println("Windows service installer:");
+			System.out.println("...file: "+install.getAbsolutePath());
+			String bat = getFileText(install);
+			Properties props = new Properties();
+			String home = dir.getAbsolutePath();
+			System.out.println("...home: "+home);
+			home = home.replaceAll("\\\\", "\\\\\\\\");
+			props.put("home", home);
+			bat = replace(bat, props);
+			setFileText(install, bat);
+			
+			//Choose the correct CTP-xx.exe for this Java
+			String thisJavaBits = System.getProperty("sun.arch.data.model");
+			File exe = new File(windows, programName+".exe");
+			File procrun = new File(windows, programName+"-"+thisJavaBits+".exe");
+			if (copyFile(procrun, exe)) System.out.println("...Service runner copied for "+thisJavaBits+" bits.");
+			else System.out.println("...Service runner could not be copied for "+thisJavaBits+" bits.");
+		}
+		catch (Exception ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(this,
+					"Unable to update the windows service install.bat file.",
+					"Windows Service Installer",
+					JOptionPane.INFORMATION_MESSAGE);
+		}
+	}
+	
+	private String replace(String string, Properties table) {
+		try {
+			Pattern pattern = Pattern.compile("\\$\\{\\w+\\}");
+			Matcher matcher = pattern.matcher(string);
+			StringBuffer sb = new StringBuffer();
+			while (matcher.find()) {
+				String group = matcher.group();
+				String key = group.substring(2, group.length()-1).trim();
+				String repl = table.getProperty(key);
+				if (repl == null) repl = matcher.quoteReplacement(group);
+				matcher.appendReplacement(sb, repl);
+			}
+			matcher.appendTail(sb);
+			return sb.toString();
+		}
+		catch (Exception ex) { return string; }
+	}
+
+	private String getFileText(File file) throws Exception {
+		BufferedReader br = new BufferedReader(
+				new InputStreamReader(
+					new FileInputStream(file), "UTF-8"));
+		StringWriter sw = new StringWriter();
+		int n;
+		char[] cbuf = new char[1024];
+		while ((n=br.read(cbuf, 0, cbuf.length)) != -1) sw.write(cbuf,0,n);
+		br.close();
+		return sw.toString();
+	}
+
+	private void setFileText(File file, String text) throws Exception {
+		BufferedWriter bw = new BufferedWriter(
+				new OutputStreamWriter(
+					new FileOutputStream(file), "UTF-8"));
+		bw.write(text, 0, text.length());
+		bw.flush();
+		bw.close();
 	}
 
 }

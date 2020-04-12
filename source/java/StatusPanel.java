@@ -24,6 +24,7 @@ public class StatusPanel extends BasePanel {
 	Configuration config;
 	
 	Hashtable<Queue, JLabel> sizes;
+	Hashtable<Queue, JLabel> counts;
 
 	public static synchronized StatusPanel getInstance() {
 		if (instance == null) instance = new StatusPanel();
@@ -34,6 +35,7 @@ public class StatusPanel extends BasePanel {
 		super();
 		config = Configuration.getInstance();
 		sizes = new Hashtable<Queue, JLabel>();
+		counts = new Hashtable<Queue, JLabel>();
 		MainPanel main = new MainPanel();
 		jsp = new JScrollPane();
 		jsp.getVerticalScrollBar().setUnitIncrement(10);
@@ -48,6 +50,8 @@ public class StatusPanel extends BasePanel {
 				for (Queue q : sizes.keySet()) {
 					JLabel size = sizes.get(q);
 					size.setText(""+q.getSize());
+					JLabel count = counts.get(q);
+					count.setText(""+q.getTransmittedFileCount());
 				}
 			}
 		};
@@ -122,6 +126,7 @@ public class StatusPanel extends BasePanel {
 			add(new XLabel("Priority", b12, 0.5f));
 			add(new XLabel("Destination", b12, 0.0f));
 			add(new XLabel("Size", b12, 0.5f));
+			add(new XLabel("Count", b12, 0.5f));
 			add(RowLayout.crlf());
 			
 			//now put in the data rows
@@ -131,10 +136,15 @@ public class StatusPanel extends BasePanel {
 				add(new XLabel(q.getDestination(), mono, 0.0f));
 				
 				//put the size label in the hashtable for later updating
-				XLabel size = new XLabel(""+q.getSize(), p12, 0.5f);
+				XLabel size = new XLabel(""+q.getSize(), p12, 1.0f);
 				sizes.put(q, size);
 				add(size);
 				
+				//put the count label in the hashtable for later updating
+				XLabel count = new XLabel(""+q.getTransmittedFileCount(), p12, 1.0f);
+				counts.put(q, count);
+				add(count);
+
 				add(RowLayout.crlf());
 			}
 		}

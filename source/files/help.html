@@ -10,11 +10,12 @@
 
 		<h3>The Configuration File</h3>
 <pre>
-&lt;router logDepth="100"&gt;
+&lt;router logDepth="100"
+        httpPort="port number"&gt; (htttPort required if running as a service)
     &lt;scp
         aetitle="AE title"
         ipaddress="IP address or 'autodetect'"
-        port="port number" /&gt;
+        port="port number" /&gt; 
     &lt;queue
         name="queue name"
         destination="dicom://destinationAET:routerAET@destinationIP:destinationPort"
@@ -28,6 +29,7 @@
 </pre>
 		<h3>Queue Priorities</h3>
 		The priority attribute of a queue determines its priority relationship to other queues. Lower integer values indicate higher priority (e.g., priority 1 comes before priority 2, etc.). If two non-empty queues have different priorities, the higher priority queue is served first. Queues with the same priority value may be served in either order.
+		
 		<h3>The Script Language</h3>
 		The script language interrogates a received DICOM object and computes a boolean result that, if <b>true</b>, results in the object being entered into the queue. An expression in the language consists of terms separated by operators and/or parentheses. There are three operators, listed in order of increasing precedence:
 		<ul>
@@ -46,16 +48,49 @@
 		<p>An identifier is either a DCM4CHE element name (e.g. SOPInstanceUID) or a DICOM tag, specified in square brackets (e.g. [0008,0018]). No spaces are permitted in identifiers, and tags are required to contain all eight hexadecimal digits identifying the group and element.
 		<p>The language supports these methods:
 		<ul>
-		<li><b>equals</b> returns <b>true</b> if the value of the identifier exactly equals the string argument; otherwise, it returns false.
-		<li><b>equalsIgnoreCase</b> is the case-insensitive version of equals.
-		<li><b>matches</b> returns <b>true</b> if the value of the identifier matches the regular expression specified in the string argument; otherwise, it returns false.
-		<li><b>contains</b> returns <b>true</b> if the value of the identifier contains the the string argument anywhere within it; otherwise, it returns false.
-		<li><b>containsIgnoreCase</b> is the case-insensitive version of contains.
-		<li><b>startsWith</b> returns <b>true</b> if the value of the identifier starts with the string argument; otherwise, it returns false.
-		<li><b>startsWithIgnoreCase</b> is the case-insensitive version of startsWith.
-		<li><b>endsWith</b> returns <b>true</b> if the value of the identifier ends with the string argument; otherwise, it returns false.
-		<li><b>endsWithIgnoreCase</b> is the case-insensitive version of endsWith.
+		<li><b><tt>equals</tt></b> returns <b>true</b> if the value of the identifier exactly equals the string argument; otherwise, it returns false.
+		<li><b><tt>equalsIgnoreCase</tt></b> is the case-insensitive version of equals.
+		<li><b><tt>matches</tt></b> returns <b>true</b> if the value of the identifier matches the regular expression specified in the string argument; otherwise, it returns false.
+		<li><b><tt>contains</tt></b> returns <b>true</b> if the value of the identifier contains the the string argument anywhere within it; otherwise, it returns false.
+		<li><b><tt>containsIgnoreCase</tt></b> is the case-insensitive version of contains.
+		<li><b><tt>startsWith</tt></b> returns <b>true</b> if the value of the identifier starts with the string argument; otherwise, it returns false.
+		<li><b><tt>startsWithIgnoreCase</tt></b> is the case-insensitive version of startsWith.
+		<li><b><tt>endsWith</tt></b> returns <b>true</b> if the value of the identifier ends with the string argument; otherwise, it returns false.
+		<li><b><tt>endsWithIgnoreCase</tt></b> is the case-insensitive version of endsWith.
 		</ul>
 		<p>The value of an identifier is the string value stored in the received DICOM object in the element associated with the identifier. If an identifier is missing from the received DICOM object, an empty string is provided.
+		
+		<h3>The httpPort Attribute</h3>
+		If the <b>httpPort</b> attribute contains a valid unused port number, the program opens a web server on the port. The server returns a status page when a request is received from a browser (e.g., <tt>http://&lt;server IP address&gt;:&lt;port&gt;</tt>). The status page presents a snapshot of the status at the time the request was received. It is not live.
+		<p>If no other servers are running on the computer, a convenient port number is 80. A common alternate choice is 8080 if 80 is in use; otherwise, picking some number in the 9000's is likely to work.
+		<p>If the attribute is missing or set to zero, the program does not open a web server.
+
+		<h3>Installing DicomRouter as a Windows Service</h3>
+		<ol>
+		<li>Open a command window with administrator privileges:
+			<ol>
+			<li>Click <b>Start</b>
+			<li>Enter <b>cmd</b> in the search box
+			<li>Type <b>Ctrl-Shift-Enter</>
+			<li>Click <b>Yes</b> in the popup dialog
+			</ol>
+		<li>Navigate to the <tt>DicomRouter/windows</tt> directory
+		<li>Enter <tt>install</tt>
+		<li>Open the <b>Services</b> applet
+		<li>Click on the <b>DicomRouter</b> service in the list
+		<li>Click the <b>Start</b> link for the DicomRouter service
+		</ol>
+		On installation, the DicomRouter service is configured to start automatically when the computer is started. That setting can be changed in the Services applet.
+		<p>In special circumstances, the DicomRouterw.exe program in the DicomRouter/windows directory can be used to configure a different Java to be used by the program or set a different memory pool size.
+		<p>When running as a Windows service, the only access to the status of the program is through a browser. This requires that the <b>httpPort</b> attribute be  set to a valid unused port on the computer. If the <b>httpPort</b> attribute is not set (or if it is set to zero), the program will not run as a service.
+		
+		<h3>Logs</h3>
+		The <tt>DicomRouter/logs</tt> directory contains the current log(s) for the program. It is initially configured to log all transmissions. To restrict log entries to errors, open the DicomRouter/log4j.properties file with a text editor. Near the bottom of the text are the lines: 
+	<pre>
+	log4j.logger.org.rsna = INFO
+	log4j.logger.mirc = INFO
+	</pre>
+		Change both to <b>WARN</b>, save the file, and restart DicomRouter.
+
 	</body>
 </html>
